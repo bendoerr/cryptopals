@@ -1,0 +1,8 @@
+flags: {}
+extra-package-dbs: []
+packages:
+- '.'
+extra-deps:
+- text-1.2.2.1
+- tokenize-0.3.0
+resolver: lts-5.9
