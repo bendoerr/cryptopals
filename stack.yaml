@@ -5,4 +5,9 @@ packages:
 extra-deps:
 - text-1.2.2.1
 - tokenize-0.3.0
+- memory-0.11
 resolver: lts-5.9
+
+flags:
+  memory:
+    support_bytestring: true

@@ -1,4 +1,4 @@
-module CryptoPals.HammingDistance where
+module CryptoPals.Analysis.HammingDistance where
 
 import           Data.Bits
 import           Data.ByteString (ByteString)
@@ -16,7 +16,7 @@ numberOfSetBits x
 --   'xor' the two values to make it more clear 11111010 xor 10010110 = 1101100 and count the set bits to do this.
 hammingDistance :: ByteString -> ByteString -> Int
 hammingDistance a b
-    | B.length a == B.length b = sum (map (\ (x, y) -> numberOfSetBits (xor x y)) (B.zip a b))
+    | B.length a == B.length b = sum (fmap (\ (x, y) -> numberOfSetBits (xor x y)) (B.zip a b))
     | otherwise                    = error "Lengths of both strings must be equal."
 
 -- | Finds the average normalized hamming distance over a set of 'ByteString's. To normalize the hamming distance is
