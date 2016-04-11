@@ -1,10 +1,10 @@
 -- {-# LANGUAGE DatatypeContexts #-}
 module CryptoPals.Analysis.Frequency where
 
-import           Data.ByteString     (ByteString)
-import qualified Data.ByteString     as B
-import           Data.Map            (fromListWith, toList)
-import           Data.Word           (Word8)
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import           Data.Map        (fromListWith, toList)
+import           Data.Word       (Word8)
 
 -- data (Fractional f) => ByteFrequency f = ByteFrequency Word8 f
 data ByteFrequency f = ByteFrequency Word8 f

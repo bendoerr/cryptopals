@@ -16,42 +16,57 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
 
-  exposed-modules:     CryptoPals.Analysis.Frequency
+  exposed-modules:     CryptoPals.Analysis.Block
+                     , CryptoPals.Analysis.Frequency
                      , CryptoPals.Analysis.HammingDistance
                      , CryptoPals.Analysis.LetterFrequency
                      , CryptoPals.Analysis.Letters
+                     , CryptoPals.Attack.CbcBitFlipping
+                     , CryptoPals.Attack.EcbCbcOracle
+                     , CryptoPals.Attack.EcbCutAndPaste
+                     , CryptoPals.Attack.EcbDecryptionOracleHarder
+                     , CryptoPals.Attack.EcbDecryptionOracleSimple
                      , CryptoPals.Cipher.AES
                      , CryptoPals.Cipher.CaesarXOR
                      , CryptoPals.Cipher.OneTimePad
                      , CryptoPals.Cipher.Types
                      , CryptoPals.Cipher.VigenereXOR
                      , CryptoPals.Convert
+                     , CryptoPals.Padding
+                     , CryptoPals.Random
+                     , CryptoPals.Support.Cookie
+                     , CryptoPals.Support.Profile
                      , CryptoPals.Utils
 
   build-depends:       base >= 4.7 && < 5
                      , base16-bytestring
                      , base64-bytestring
                      , bytestring
-                     , memory
-                     , cryptonite
                      , containers
+                     , cryptonite
+                     , memory
+                     , random
+                     , text
                      , tokenize
                      , word8
-                     , text
+
   default-language:    Haskell2010
 
 test-suite cryptopals-test
   type:                exitcode-stdio-1.0
+
   hs-source-dirs:      test
+
   main-is:             CryptoPalsSpec.hs
+
   build-depends:       base
-                     , cryptopals
-                     , bytestring
-                     , hspec
                      , QuickCheck
-                     , cipher-aes
-                     , crypto-cipher-types
+                     , bytestring
+                     , cryptopals
+                     , hspec
+
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+
   default-language:    Haskell2010
 
 source-repository head

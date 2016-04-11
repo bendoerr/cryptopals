@@ -1,12 +1,12 @@
 module CryptoPals.Cipher.AES (AES128(..)) where
 
+import           Control.Monad
+import           Data.ByteString         (ByteString)
+import qualified Data.ByteString         as B
+
 import qualified Crypto.Cipher.AES       as Crypto
 import qualified Crypto.Cipher.Types     as Crypto
 import qualified Crypto.Error            as Crypto
-import           Data.ByteArray          (ByteArray)
-import qualified Data.ByteArray          as ByteArray
-import           Data.ByteString         (ByteString)
-import qualified Data.ByteString         as ByteString
 
 import           CryptoPals.Cipher.Types
 

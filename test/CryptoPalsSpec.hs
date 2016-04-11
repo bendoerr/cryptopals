@@ -1,20 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import           Control.Applicative                 ((<$>))
-import           Data.ByteString                     (ByteString)
-import qualified Data.ByteString                     as B
-import           Data.Ratio                          ((%))
-import           Data.Word                           (Word8)
+import           Data.ByteString                             (ByteString)
+import qualified Data.ByteString                             as B
+import qualified Data.ByteString.Char8                       as C
+import           Data.Ratio                                  ((%))
+import           Data.Word                                   (Word8)
 import           Test.Hspec
 import           Test.QuickCheck
 
+import           CryptoPals.Analysis.Block
 import           CryptoPals.Analysis.HammingDistance
+import           CryptoPals.Attack.CbcBitFlipping
+import           CryptoPals.Attack.EcbCbcOracle
+import           CryptoPals.Attack.EcbCutAndPaste
+import           CryptoPals.Attack.EcbDecryptionOracleHarder
+import           CryptoPals.Attack.EcbDecryptionOracleSimple
 import           CryptoPals.Cipher.AES
 import           CryptoPals.Cipher.CaesarXOR
 import           CryptoPals.Cipher.OneTimePad
 import           CryptoPals.Cipher.Types
 import           CryptoPals.Cipher.VigenereXOR
 import           CryptoPals.Convert
+import           CryptoPals.Padding
+import           CryptoPals.Random
+import           CryptoPals.Support.Profile
 import           CryptoPals.Utils
 
 main :: IO ()
@@ -103,25 +112,66 @@ main = hspec $ do
     describe "Set 2 - Block Crypto:" $ do
 
         it "Challenge  9 (Implement PKCS#7 padding)" $
-           True `shouldBe` True
+            let expected = "YELLOW SUBMARINE\x04\x04\x04\x04"
+                given    = "YELLOW SUBMARINE"
+             in (pkcs7padding 20 given) `shouldBe` expected
 
-        it "Challenge 10 (Implement CBC mode)" $
-           True `shouldBe` True
+        it "Challenge 10 (Implement CBC mode)" $ do
+            txt <- B.filter(not . (==) 0x0A) <$> B.readFile "resources/challenge-10.txt"
+            let ciphertext        = fromBase64 txt
+                cipher            = cipherInit "YELLOW SUBMARINE" :: AES128
+                iv                = nullIV cipher
+                plaintext         = cbcDecrypt cipher iv ciphertext
+                expectedPlaintext = "I'm back and I'm ringin' the bell \nA rockin' on the mike while the fly girls yell \nIn ecstasy in the back of me \nWell that's my DJ Deshay cuttin' all them Z's \nHittin' hard and the girlies goin' crazy \nVanilla's on the mike, man I'm not lazy. \n\nI'm lettin' my drug kick in \nIt controls my mouth and I begin \nTo just let it flow, let my concepts go \nMy posse's to the side yellin', Go Vanilla Go! \n\nSmooth 'cause that's the way I will be \nAnd if you don't give a damn, then \nWhy you starin' at me \nSo get off 'cause I control the stage \nThere's no dissin' allowed \nI'm in my own phase \nThe girlies sa y they love me and that is ok \nAnd I can dance better than any kid n' play \n\nStage 2 -- Yea the one ya' wanna listen to \nIt's off my head so let the beat play through \nSo I can funk it up and make it sound good \n1-2-3 Yo -- Knock on some wood \nFor good luck, I like my rhymes atrocious \nSupercalafragilisticexpialidocious \nI'm an effect and that you can bet \nI can take a fly girl and make her wet. \n\nI'm like Samson -- Samson to Delilah \nThere's no denyin', You can try to hang \nBut you'll keep tryin' to get my style \nOver and over, practice makes perfect \nBut not if you're a loafer. \n\nYou'll get nowhere, no place, no time, no girls \nSoon -- Oh my God, homebody, you probably eat \nSpaghetti with a spoon! Come on and say it! \n\nVIP. Vanilla Ice yep, yep, I'm comin' hard like a rhino \nIntoxicating so you stagger like a wino \nSo punks stop trying and girl stop cryin' \nVanilla Ice is sellin' and you people are buyin' \n'Cause why the freaks are jockin' like Crazy Glue \nMovin' and groovin' trying to sing along \nAll through the ghetto groovin' this here song \nNow you're amazed by the VIP posse. \n\nSteppin' so hard like a German Nazi \nStartled by the bases hittin' ground \nThere's no trippin' on mine, I'm just gettin' down \nSparkamatic, I'm hangin' tight like a fanatic \nYou trapped me once and I thought that \nYou might have it \nSo step down and lend me your ear \n'89 in my time! You, '90 is my year. \n\nYou're weakenin' fast, YO! and I can tell it \nYour body's gettin' hot, so, so I can smell it \nSo don't be mad and don't be sad \n'Cause the lyrics belong to ICE, You can call me Dad \nYou're pitchin' a fit, so step back and endure \nLet the witch doctor, Ice, do the dance to cure \nSo come up close and don't be square \nYou wanna battle me -- Anytime, anywhere \n\nYou thought that I was weak, Boy, you're dead wrong \nSo come on, everybody and sing this song \n\nSay -- Play that funky music Say, go white boy, go white boy go \nplay that funky music Go white boy, go white boy, go \nLay down and boogie and play that funky music till you die. \n\nPlay that funky music Come on, Come on, let me hear \nPlay that funky music white boy you say it, say it \nPlay that funky music A little louder now \nPlay that funky music, white boy Come on, Come on, Come on \nPlay that funky music \n\EOT\EOT\EOT\EOT"
+                actualCiphertext  = cbcEncrypt cipher iv expectedPlaintext
+             in do plaintext `shouldBe` expectedPlaintext
+                   actualCiphertext `shouldBe` ciphertext
 
-        it "Challenge 11 (An ECB/CBC detection oracle)" $
-           True `shouldBe` True
+        it "Challenge 11 (An ECB/CBC detection oracle)" $ do
+            oracle <- randomEcbCbcOracle
+            detect <- detectEcbCbcOracleMode oracle "yellow submarine0123456789"
+            let guess  = resultGuessMode detect
+                actual = resultActualMode detect
+             in guess `shouldBe` actual
 
-        it "Challenge 12 (Byte-at-a-time ECB decryption (Simple))" $
-           True `shouldBe` True
+        it "Challenge 12 (Find ECB block size)" $ do
+            oracle <- randomEcbDecryptionOracleSimple
+            let unknownText    = fromBase64 $ "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
+                oracle'        = oracle unknownText
+                blockSize      = ecbBlockSize oracle'
+            blockSize `shouldBe` 16
 
-        it "Challenge 13 (ECB cut-and-paste)" $
-           True `shouldBe` True
+        it "Challenge 12 (Byte-at-a-time ECB decryption (Simple))" $ do
+            oracle <- randomEcbDecryptionOracleSimple
+            let unknownText    = fromBase64 $ "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
+                oracle'        = oracle unknownText
+                discoveredText = decryptUnknownSimple oracle'
+             in discoveredText `shouldBe` unknownText
 
-        it "Challenge 14 (Byte-at-a-time ECB decryption (Harder))" $
-           True `shouldBe` True
+        it "Challenge 13 (ECB cut-and-paste)" $ do
+            cipher <- (cipherInit :: ByteString -> AES128) <$> getRandomByteString 16
+            let encFunc = encryptProfile cipher
+                decFunc = decryptProfile cipher
+                oracle  = encFunc . profileFor
+                adminProfile = decFunc $ cutAndPasteRole oracle "admin"
+             in profileRole adminProfile `shouldBe` "admin"
 
-        it "Challenge 15 (PKCS#7 padding validation)" $
-           True `shouldBe` True
+        it "Challenge 14 (Byte-at-a-time ECB decryption (Harder))" $ do
+            oracle <- randomEcbDecryptionOracleHarder
+            let unknownText    = fromBase64 $ "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
+                oracle'        = oracle unknownText
+                discoveredText = decryptUnknownHarder oracle'
+             in discoveredText `shouldBe` unknownText
 
-        it "Challenge 16 (CBC bitflipping attacks)" $
-           True `shouldBe` True
+        it "Challenge 15 (PKCS#7 padding validation)" $ do
+            unPkcsPaddingStrict "ICE ICE BABY\x04\x04\x04\x04" `shouldBe` Just "ICE ICE BABY"
+            unPkcsPaddingStrict "ICE ICE BABY\x05\x05\x05\x05" `shouldBe` Nothing
+            unPkcsPaddingStrict "ICE ICE BABY\x01\x02\x03\x04" `shouldBe` Nothing
+
+        it "Challenge 16 (CBC bitflipping attacks)" $ do
+            cipher <- (cipherInit :: ByteString -> AES128) <$> getRandomByteString 16
+            iv <- makeIV cipher <$> getRandomByteString 16
+            let ciphertext = encryptUserInfo cipher iv userInfoAttackStr
+                ciphertext' = userInfoFlipBits ciphertext
+                userInfo = decryptUserInfo cipher iv ciphertext'
+             in userInfoIsAdmin userInfo `shouldBe` True

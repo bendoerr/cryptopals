@@ -1,8 +1,9 @@
 module CryptoPals.Utils where
 
-import           Data.ByteString     (ByteString)
-import qualified Data.ByteString     as B
-import qualified Data.Set            as Set
+import           Data.Bits       (xor)
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import qualified Data.Set        as Set
 
 chunk :: Int -> ByteString -> [ByteString]
 chunk i b = (B.take i) <$> (splitter b) [] where
@@ -17,3 +18,11 @@ hasRepeatedBlock blockSize bs = hasMatchingBlocks blocks
         where blocks = fmap (chunk blockSize) . take numBlocks $ B.tails bs
               hasMatchingBlocks = any (\xs -> length xs /= Set.size (Set.fromList xs))
               numBlocks = blockSize + (B.length bs `mod` blockSize) + 1
+
+zipXor :: ByteString -> ByteString -> ByteString
+zipXor b1 b2 = B.pack $ zipWith xor (B.unpack b1) (B.unpack b2)
+
+findM :: Monad m => (a -> m Bool) -> [a] -> m (Maybe a)
+findM _ [] = return Nothing
+findM f (x:xs) = do y <- f x
+                    if y then return (Just x) else findM f xs
